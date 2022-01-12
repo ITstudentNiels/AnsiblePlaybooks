@@ -1,0 +1,15 @@
+---
+  - name: Create nginx config for the student
+    hosts: NPROXY00
+    #hosts: localhost
+    become: true
+    tasks:  
+      - name: Create template and save
+        become: true
+        template:
+          src: templates/nginx-server.conf.j2
+          dest: "/etc/nginx/configs/{{ student_number }}.conf"
+     
+      - name: Restart nginx
+        service: name=nginx state=restarted
+

@@ -1,0 +1,13 @@
+[docker]
+192.168.0.3
+
+[docker:vars]
+ansible_host_url=tcp://192.168.0.3:2376
+ansible_python_interpreter=/usr/bin/python3
+
+[NPROXY00]
+172.16.0.3
+
+[NPROXY00:vars]
+ansible_python_interpreter=/usr/bin/python3
+

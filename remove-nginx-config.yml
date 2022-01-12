@@ -1,0 +1,14 @@
+---
+  - name: Remove the nginx config
+    hosts: NPROXY00
+    become: true
+    tasks:  
+      - name: Remove nginx configuration
+        become: true
+        file:
+          state: absent
+          path: "/etc/nginx/configs/{{ student_number }}.conf"
+     
+      - name: Restart nginx
+        service: name=nginx state=restarted
+

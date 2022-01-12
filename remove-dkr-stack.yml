@@ -1,0 +1,11 @@
+---
+  - name: Remove docker stack
+    gather_facts:
+    hosts: docker
+    become: true
+    tasks:
+    - debug: var="{{ student_number }}"
+    - name: Remove stack
+      docker_stack:
+        name: "{{ student_number }}"
+        state: absent

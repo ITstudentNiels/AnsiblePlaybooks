@@ -1,0 +1,67 @@
+---
+  - name: Gather VM IP
+    gather_facts: true
+    hosts: localhost
+    tasks:
+    - name: Include vars
+      include_vars:
+        file: vars.yml
+
+    - name: Gather vm information
+      vmware_guest_tools_wait:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: False
+        name: "{{ vm_name }}"
+        folder: /Project/LAN
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Get IP from VM
+      set_fact:
+        VMIP: "{{ vm_info.instance.hw_eth0.ipaddresses[0] }}"
+    
+    - name: Add VMIP to Host
+      add_host:
+        name: "{{ VMIP }}"
+        groups: selectedIP
+
+  - name: Leave docker swarm
+    gather_facts: yes
+    hosts: selectedIP
+    become: true
+    tasks:
+    - name: Leave swarm
+      docker_swarm:
+        state: absent
+
+  - name: Remove node from swarm 
+    gather_facts: yes
+    hosts: docker
+    become: true
+    tasks:
+    - name: Include vars
+      include_vars:
+        file: vars.yml
+
+    - name: Remove from swarm
+      docker_swarm:
+        state: remove
+        node_id: "{{ hostname }}"
+
+  - name: Remove VM from vcenter
+    gather_facts: yes
+    hosts: localhost
+    tasks:
+    - name: Remove VM
+      vmware_guest:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: False
+        name: "{{ vm_name }}"
+        state: absent
+        force: true
+      delegate_to: localhost
+

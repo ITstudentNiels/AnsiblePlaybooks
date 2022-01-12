@@ -1,0 +1,69 @@
+---
+  - name: Create new docker worker
+    gather_facts: true
+    hosts: localhost
+    tasks:
+    - name: Include vars
+      include_vars:
+        file: vars.yml
+
+    - name: Clone docker template
+      vmware_guest:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: False
+        name: "{{ vm_name }}"
+        template: Templ_Docker
+        datacenter: Datacenter
+        folder: /Project/LAN
+        state: poweredon
+        wait_for_ip_address: yes 
+     
+    - name: Gather vm information
+      vmware_guest_tools_wait:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: False
+        folder: /Project/LAN
+        name: "{{ vm_name }}"
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Get IP from VM
+      set_fact:
+        VMIP: "{{ vm_info.instance.hw_eth0.ipaddresses[0] }}"
+    
+    - name: Add VMIP to Host
+      add_host:
+        name: "{{ VMIP }}"
+        groups: selectedIP
+        ansible_python_interpreter: /usr/bin/python3
+
+  - name: Add VM to Docker Swarm
+    gather_facts: yes
+    hosts: selectedIP
+    become: true
+    tasks:
+    - name: Include vars
+      include_vars:
+        file: vars.yml
+
+    - name: Change hostname
+      hostname: 
+        name: "{{ hostname }}"
+
+    - name: Add hostname to /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '^127\.0\.0\.1[ \t]+localhost'
+        line: '127.0.0.1 localhost {{ hostname }}'
+        state: present
+
+    - name: Reboot system
+      reboot:
+        reboot_timeout: 300
+
+    - name: Join docker swarm
+      shell: docker swarm join --token SWMTKN-1-0lz 192.168.0.3:2377

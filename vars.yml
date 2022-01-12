@@ -1,0 +1,8 @@
+vcenter_ip: <ip>
+vcenter_username: <username>
+vcenter_password: <password>
+
+template: Templ_Docker
+datacenter: Datacenter
+folder: /Project/LAN
+
